@@ -1,4 +1,4 @@
-![(22)](https://github.com/okannako/celestiamochascript/assets/73176377/f005e199-f5f9-4002-a444-e683baa2f01b)
+<img width="1024" height="572" alt="image" src="https://github.com/user-attachments/assets/9d1d40b5-8f60-49b2-8ac3-b27f5716f874" />
 
 The Celestia Mocha Testnet has been running for a very long time and kept running without interruption after Mainnet. The Celestia team continues its development on this network. The network is currently running as mocha-5 (validators from mocha-4 were not migrated and need to be created again on mocha-5). Below is the command for the script I created. When you run it, you can choose the node you want to install from the options and have it set up in a very short time. Besides Validator, Fibre, Bridge and Light Node installation, there are also options for other operations. The script is based on the current releases (celestia-app v10.5.0-mocha, celestia-node v0.34.4-mocha).
 
