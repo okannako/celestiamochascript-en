@@ -16,7 +16,7 @@ echo -e "\e[0m"
 sleep 5
 
 CHAIN_ID="mocha-5"
-APP_VERSION="v10.5.0-mocha"
+APP_VERSION="v10.6.0-mocha"
 NODE_VERSION="v0.34.4-mocha"
 GO_VERSION="1.26.9"
 CORE_IP="rpc-mocha.pops.one"
@@ -30,6 +30,7 @@ options=(
 "Create Validator"
 "Install Fibre Server"
 "Register Fibre Address On-Chain"
+"Upgrade Validator and Fibre"
 "Install Light Node"
 "Install Bridge Node"
 "Install Full Storage Node"
@@ -234,6 +235,68 @@ celestia-appd tx valaddr set-host $FIBRE_HOST:7980 \
 sleep 10
 echo -e '\e[36mRegistration check (should show found: true):\e[39m'
 celestia-appd query valaddr provider $(celestia-appd comet show-address)
+
+break
+;;
+
+"Upgrade Validator and Fibre")
+
+source $HOME/.bash_profile
+echo -e "\e[1m\e[32m Upgrading celestia-app to $APP_VERSION \e[0m" && sleep 2
+
+if [ ! -d $HOME/celestia-app ]; then
+echo -e '\e[31mERROR: $HOME/celestia-app folder not found. This option is for nodes installed with this script or guide.\e[39m'
+break
+fi
+
+cd $HOME/celestia-app
+git fetch --tags
+git checkout -f tags/$APP_VERSION
+make install
+cd $HOME
+
+if [ "v$(celestia-appd version 2>&1 | head -1)" != "$APP_VERSION" ]; then
+echo -e '\e[31mERROR: The new version could not be built, the node was not restarted. Check the error messages above.\e[39m'
+break
+fi
+celestia-appd version && sleep 2
+sudo systemctl restart celestia-appd
+echo -e '\e[36mcelestia-appd restarted with the new version.\e[39m'
+
+FIBRE_SVC=$(systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -i fibre | head -1 | sed 's/\.service$//')
+if [ -z "$FIBRE_SVC" ]; then
+echo -e '\e[36mNo Fibre service found, only celestia-app was upgraded.\e[39m'
+sleep 5
+sudo journalctl -u celestia-appd -f
+break
+fi
+
+FIBRE_DIR=$(systemctl cat $FIBRE_SVC | grep -oP '(?<=--home )\S+' | head -1)
+FIBRE_DIR=${FIBRE_DIR:-/data/fibre}
+echo -e "\e[1m\e[32m Upgrading Fibre (service: $FIBRE_SVC, folder: $FIBRE_DIR) \e[0m" && sleep 2
+
+cd $HOME
+rm -f fibre fibre_Linux_x86_64.tar.gz checksums.txt
+wget https://github.com/celestiaorg/celestia-app/releases/download/$APP_VERSION/fibre_Linux_x86_64.tar.gz
+wget https://github.com/celestiaorg/celestia-app/releases/download/$APP_VERSION/checksums.txt
+if ! sha256sum --ignore-missing --check checksums.txt; then
+echo -e '\e[31mERROR: Checksum verification failed, Fibre was not upgraded. Your current Fibre keeps running.\e[39m'
+rm -f fibre_Linux_x86_64.tar.gz checksums.txt
+break
+fi
+tar -xzf fibre_Linux_x86_64.tar.gz
+rm fibre_Linux_x86_64.tar.gz checksums.txt
+
+sudo systemctl stop $FIBRE_SVC
+sudo mv fibre /usr/local/bin/
+fibre version
+celestia-appd config sync --fibre-home $FIBRE_DIR --dry-run
+celestia-appd config sync --fibre-home $FIBRE_DIR
+sudo systemctl start $FIBRE_SVC
+
+echo -e '\e[36mUpgrade complete. To check: celestia-appd status 2>&1 | jq .sync_info.catching_up and, if you use celestiawatch, sudo celestiawatch doctor\e[39m'
+sleep 7
+sudo journalctl -u $FIBRE_SVC -f
 
 break
 ;;
