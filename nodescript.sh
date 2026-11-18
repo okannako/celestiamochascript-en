@@ -16,8 +16,8 @@ echo -e "\e[0m"
 sleep 5
 
 CHAIN_ID="mocha-5"
-APP_VERSION="v10.6.0-mocha"
-NODE_VERSION="v0.35.0-mocha"
+APP_VERSION="v11.0.0-mocha"
+NODE_VERSION="v0.36.0-mocha"
 GO_VERSION="1.26.10"
 CORE_IP="rpc-mocha.pops.one"
 CORE_PORT="9090"
